@@ -98,7 +98,8 @@ export default {
         return this.$message(err.message);
       }
 
-      klines.forEach(k => {
+      klines.forEach((k, idx) => {
+        k.index = idx;
         k.highIncrease = (k.high - k.open) / k.open; // 最高增幅
         k.lowDescrease = (k.low - k.open) / k.open; // 最低增幅
         k.closePercent = (k.close - k.open) / k.open;
@@ -116,7 +117,7 @@ export default {
     },
     analysis() {
       const parsedKlineData = this.getKlineData();
-      this.parsedKlineData = parsedKlineData;
+      this.parsedKlineData = this.$root.wholeKlineData = parsedKlineData;
       this.activeName = 'result';
       this.rsTitle = parsedKlineData.dataInfo + '整体分析';
     }

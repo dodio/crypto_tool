@@ -44,11 +44,39 @@
                       <Echart ref="chart" />
                   </div>
               </div>
-
-              <KlineDataAnalyzer v-if="subAnalyze"  :title="subAnalyze.rsTitle" :klineData="subAnalyze.klineData"/>
+              <el-tabs v-model="subActiveName" v-if="subAnalyze.length"  @edit="tabRemove" style="margin-top: 20px;">
+                <el-tab-pane v-for="sub in subAnalyze" :key="sub.tabId" :label="sub.rsTitle" :closable="true" :name="sub.tabId">
+                  <KlineDataAnalyzer :title="sub.rsTitle" :klineData="sub.klineData"/>
+                </el-tab-pane>
+              </el-tabs>
           </el-tab-pane>
-             
       </el-tabs>
+      <el-dialog v-if="selecttedCate" :visible="true" title="设置细分分析参数">
+        <h3>当前选择区间：{{selecttedCate.sery.seriesName}}:{{selecttedCate.categoryName}}</h3>
+        <el-form>
+          <el-form-item>
+            <el-switch
+              v-model="subCateParam.present"
+              active-text="分析本区间k线"
+              inactive-text="分析本区间后续k线">
+            </el-switch>
+          </el-form-item>
+          <el-form-item v-if="!subCateParam.present">
+            <el-switch
+              v-model="subCateParam.single"
+              active-text="后第n根k线"
+              inactive-text="连续后n根k线">
+            </el-switch>
+          </el-form-item>
+          <el-form-item label="N值" v-if="!subCateParam.present">
+            <el-input-number v-model="subCateParam.n" :step="1" :min="1" :max="5"></el-input-number>
+          </el-form-item>
+          <el-form-item>
+            <el-button @click="selecttedCate=null,subCateParam=null">取消</el-button>
+            <el-button @click="setSubAnalyzer" type="primary">确定</el-button>
+          </el-form-item>
+        </el-form>
+      </el-dialog>
     </div>
 </template>
 
@@ -68,11 +96,14 @@ export default {
     data() {
       return {
         rs: null,
-        activeName: 'first',
+        subActiveName: '',
+        activeName: 'second',
         maxPercent: 0.1,
         splitter: 0.01,
         shortPercent: 0.002,
-        subAnalyze: null
+        subAnalyze: [],
+        selecttedCate: null,
+        subCateParam: null,
       }
     },
     watch: {
@@ -92,18 +123,78 @@ export default {
         this.analysis();
         this.$refs.chart.ins.on('click', (sery) => {
           const cate = this.chartData[sery.seriesIndex][sery.dataIndex];
-          const title = sery.seriesName + cate.categoryName + '精细分析';
-          const subAnalyzeData = {
-            rsTitle: title,
-            klineData: {
-              dataInfo: this.klineData.dataInfo,
-              klines: cate.klines,
-            }
-          }
-          this.subAnalyze = subAnalyzeData;
+          cate.sery = sery;
+          this.selecttedCate = cate;
+          this.subCateParam = {
+            present: false,
+            single: true,
+            n: 1
+          };
         })
     },
     methods: {
+        tabRemove(targetName, action) {
+          if (action === 'remove') {
+            let tabs = this.subAnalyze;
+            let activeName = this.subActiveName;
+            if (activeName === targetName) {
+              tabs.forEach((tab, index) => {
+                if (tab.tabId === targetName) {
+                  let nextTab = tabs[index + 1] || tabs[index - 1];
+                  if (nextTab) {
+                    activeName = nextTab.tabId;
+                  } else {
+                    activeName = 'second'
+                  }
+                }
+              });
+            }
+            this.subActiveName = activeName;
+            this.subAnalyze = tabs.filter(tab => tab.tabId !== targetName);
+          }
+        },
+        setSubAnalyzer() {
+          const cate = this.selecttedCate;
+          const sery = cate.sery;
+          const {present, single, n} = this.subCateParam;
+          const tabId = String(Math.random());
+          const subAnalyzeData = {
+            tabId,
+            klineData: {
+              dataInfo: this.klineData.dataInfo,
+            }
+          }
+          const wholeKlines = this.$root.wholeKlineData.klines;
+
+          if(present) {
+            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + '精细分析';
+            subAnalyzeData.klineData.klines = cate.klines;
+          } else if(single) {
+            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `后第${n}k线分析`;
+            subAnalyzeData.klineData.klines = cate.klines.map(k => {
+              return wholeKlines[k.index + n];
+            }).filter(k => !!k);
+          } else {
+            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `连续后${n}k线分析`;
+            // all 1 - n klines 
+            const allKlines = Array.prototype.concat.apply([], 
+              Array.from({length: n}).map((v, idx) => {
+                const n = idx + 1;
+                return cate.klines.map(k => {
+                  return wholeKlines[k.index + n];
+                }).filter(k => !!k);
+              })
+            ).sort((a, b) => a.id - b.id);
+            console.log('后nk线', allKlines);
+            subAnalyzeData.klineData.klines = _.sortedUniqBy(allKlines, 'id');
+          }
+          console.log('数量', cate.klines.length, subAnalyzeData.klineData.klines.length);
+          
+          this.subAnalyze.push(subAnalyzeData);
+          this.subCateParam = null;
+          this.selecttedCate = null;
+          this.subActiveName = this.subAnalyze[this.subAnalyze.length - 1].tabId;
+        },
         getCategories() {
           const cates = [];
           const intervals = _.range(-this.maxPercent, this.maxPercent, this.splitter).map(v => {
