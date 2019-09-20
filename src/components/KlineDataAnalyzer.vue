@@ -44,10 +44,10 @@
                       <Echart ref="chart" />
                   </div>
               </div>
+
+              <KlineDataAnalyzer v-if="subAnalyze"  :title="subAnalyze.rsTitle" :klineData="subAnalyze.klineData"/>
           </el-tab-pane>
-          <el-tab-pane v-if="subAnalyze" :label="subAnalyze.rsTitle" name="third">
-              <KlineDataAnalyzer :title="subAnalyze.rsTitle" :klineData="subAnalyze.klineData"/>
-          </el-tab-pane>
+             
       </el-tabs>
     </div>
 </template>
