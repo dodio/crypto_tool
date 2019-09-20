@@ -6,7 +6,9 @@
         <el-menu-item index="1">计算器</el-menu-item>
       </el-menu>
     </div>
-    <router-view/>
+    <main>
+      <router-view/>
+    </main>
   </div>
 </template>
 
@@ -36,5 +38,8 @@ body {
 
 #nav a.router-link-exact-active {
   color: #42b983;
+}
+#app > main {
+  padding: 20px;
 }
 </style>
