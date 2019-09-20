@@ -1,28 +1,37 @@
 <template>
   <div id="app">
     <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+      <el-menu mode="horizontal" style="background-color: rgb(84, 92, 100);">
+        <el-menu-item index="2">k线涨跌幅统计</el-menu-item>
+        <el-menu-item index="1">计算器</el-menu-item>
+      </el-menu>
     </div>
     <router-view/>
   </div>
 </template>
 
+<script>
+export default {
+  data() {
+    return {};
+  }
+}
+</script>
+
 <style>
+body {
+  margin: 0;
+  padding: 0;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-#nav {
-  padding: 30px;
 }
 
 #nav a {
   font-weight: bold;
-  color: #2c3e50;
+  color: #fff;
 }
 
 #nav a.router-link-exact-active {
