@@ -35,7 +35,7 @@
                   <el-input-number v-model="splitter" @change="analysis" :step="0.001" :min="0.001" :max="0.2"></el-input-number>
                 </el-form-item>
                 <el-form-item label="短影线百分比定义">
-                  <el-input-number v-model="shortPercent" @change="analysis" :step="0.001" :min="0.001" :max="0.2"></el-input-number>
+                  <el-input-number v-model="shortPercent" @change="analysis" :step="0.001" :min="0.001" :max="0.1"></el-input-number>
                 </el-form-item>
               </el-form>
               <el-divider/>
@@ -63,12 +63,15 @@
           </el-form-item>
           <el-form-item v-if="!subCateParam.present">
             <el-switch
-              v-model="subCateParam.single"
-              active-text="后第n根k线"
-              inactive-text="连续后n根k线">
+              v-model="subCateParam.after"
+              active-text="后"
+              inactive-text="前">
             </el-switch>
-          </el-form-item>
-          <el-form-item label="N值" v-if="!subCateParam.present">
+            <el-switch
+              v-model="subCateParam.single"
+              active-text="第"
+              inactive-text="连续">
+            </el-switch>
             <el-input-number v-model="subCateParam.n" :step="1" :min="1" :max="5"></el-input-number>
           </el-form-item>
           <el-form-item>
@@ -128,6 +131,7 @@ export default {
           this.subCateParam = {
             present: false,
             single: true,
+            after: true,
             n: 1
           };
         })
@@ -156,7 +160,7 @@ export default {
         setSubAnalyzer() {
           const cate = this.selecttedCate;
           const sery = cate.sery;
-          const {present, single, n} = this.subCateParam;
+          const {present, single, n, after} = this.subCateParam;
           const tabId = String(Math.random());
           const subAnalyzeData = {
             tabId,
@@ -165,23 +169,24 @@ export default {
             }
           }
           const wholeKlines = this.$root.wholeKlineData.klines;
+          const directionText = after ? '后' : '前';
 
           if(present) {
             subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + '精细分析';
             subAnalyzeData.klineData.klines = cate.klines;
           } else if(single) {
-            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `后第${n}k线分析`;
+            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `${directionText}第${n}k线分析`;
             subAnalyzeData.klineData.klines = cate.klines.map(k => {
-              return wholeKlines[k.index + n];
+              return wholeKlines[k.index + (after ? n : -n)];
             }).filter(k => !!k);
           } else {
-            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `连续后${n}k线分析`;
+            subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `连续${directionText}${n}k线分析`;
             // all 1 - n klines 
             const allKlines = Array.prototype.concat.apply([], 
               Array.from({length: n}).map((v, idx) => {
                 const n = idx + 1;
                 return cate.klines.map(k => {
-                  return wholeKlines[k.index + n];
+                  return wholeKlines[k.index + (after ? n : -n)];
                 }).filter(k => !!k);
               })
             ).sort((a, b) => a.id - b.id);
@@ -246,11 +251,11 @@ export default {
             downCount: 0
           };
           klines.forEach(kline => {
-            if(kline.isShortLow) {
-              info.shortLow += 1;
-            }
-            if(kline.isShortHigh) {
+            if(kline.highIncrease - kline.closePercent <= this.shortPercent) {
               info.shortHigh += 1;
+            }
+            if(kline.closePercent - kline.lowDescrease <= this.shortPercent) {
+              info.shortLow += 1;
             }
             if(kline.close > kline.open) {
               info.upCount+=1
@@ -341,6 +346,7 @@ export default {
         drawChart() {
           const seryNames =['高点分布', '低点分布', '收盘分布'];
           const self = this;
+          const lasteKline = _.last(self.$root.wholeKlineData.klines);
           this.$refs.chart.ins.setOption({
             tooltip: {
               show: true,
@@ -360,7 +366,7 @@ export default {
                 <br/>
                 <b>该范围平均幅度：${(data.meanValue * 100).toFixed(2)}%</b>
                 <br/>
-                <b>最新k线该位置建议开仓价格</b>：${(self.rs.latestKline.open * (1 + data.meanValue)).toFixed(2)}
+                <b>最新k线该位置建议开仓价格</b>：${(lasteKline.open * (1 + data.meanValue)).toFixed(2)}
                 `;
                 return toolTip;
               }
@@ -370,7 +376,7 @@ export default {
             },
             grid: {
               left: 0,
-              top: 30,
+              top: 40,
               bottom: 20,
               right: 0,
             },

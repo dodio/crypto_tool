@@ -103,12 +103,6 @@ export default {
         k.highIncrease = (k.high - k.open) / k.open; // 最高增幅
         k.lowDescrease = (k.low - k.open) / k.open; // 最低增幅
         k.closePercent = (k.close - k.open) / k.open;
-        if(k.highIncrease - k.closePercent <= this.shortPercent) {
-          k.isShortHigh = true;
-        }
-        if(k.closePercent - k.lowDescrease <= this.shortPercent) {
-          k.isShortLow = true;
-        }
         k.datetime = moment(k.id * 1e3).format('YYYY-MM-DD HH:mm');
       });
 
