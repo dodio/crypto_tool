@@ -23,6 +23,58 @@
                   <el-tag type="info">短下影线：{{rs.shortLow}}次，{{(rs.shortLow * 100 / rs.klineCount).toFixed(2)}}%</el-tag>
                   <el-tag type="info">涨：{{rs.upCount}}次，{{(rs.upCount * 100 / rs.klineCount).toFixed(2)}}%</el-tag>
                   <el-tag type="info">跌：{{rs.downCount}}次，{{(rs.downCount * 100 / rs.klineCount).toFixed(2)}}%</el-tag>
+                  <el-divider></el-divider>
+                  <el-table :data="rsTable" row-key="categoryName">
+                    <el-table-column prop="categoryName" label="幅度"></el-table-column>
+                    <el-table-column label="最大涨幅">
+                      <template slot-scope="scope">
+                        <el-tag>数量：{{scope.row.highCate.klines.length}}</el-tag>
+                        <template v-if="scope.row.highCate.klines.length">
+                            <el-tag>比例：{{(100 * scope.row.highCate.klines.length/rs.klineCount).toFixed(2)}}%</el-tag>
+                            <el-tag>平均幅度：{{(scope.row.highCate.meanValue * 100).toFixed(2)}}%</el-tag>
+                            <el-alert>
+                              短上影：{{scope.row.highCate.shortHigh}}，短下影：{{scope.row.highCate.shortLow}}，涨：{{scope.row.highCate.upCount}}({{(scope.row.highCate.upCount * 100 / scope.row.highCate.klines.length).toFixed(2)}}%)，跌：{{scope.row.highCate.downCount}}
+                            </el-alert>
+                            <el-alert v-if="scope.row.highCate.preSumCount">
+                              <b>高于{{scope.row.highCate.leftName}}</b>：{{scope.row.highCate.preSumCount}}次，占比：{{(100 * scope.row.highCate.preSumCount/rs.klineCount).toFixed(2)}}%`;
+                            </el-alert>
+                        </template>
+                      </template>
+                    </el-table-column>
+
+                    <el-table-column label="最大跌幅">
+                      <template slot-scope="scope">
+                        <el-tag>数量：{{scope.row.lowCate.klines.length}}</el-tag>
+                        <template v-if="scope.row.lowCate.klines.length">
+                          <el-tag>比例：{{(100 * scope.row.lowCate.klines.length/rs.klineCount).toFixed(2)}}%</el-tag>
+                          <el-tag>平均幅度：{{(scope.row.lowCate.meanValue * 100).toFixed(2)}}%</el-tag>
+                          <el-alert>
+                            短上影：{{scope.row.lowCate.shortHigh}}，短下影：{{scope.row.lowCate.shortLow}}，涨：{{scope.row.lowCate.upCount}}({{(scope.row.lowCate.upCount * 100 / scope.row.lowCate.klines.length).toFixed(2)}}%)，跌：{{scope.row.lowCate.downCount}}
+                          </el-alert>
+                          
+                          <el-alert v-if="scope.row.lowCate.preSumCount">
+                            <b>低于{{scope.row.lowCate.rightName}}</b>：{{scope.row.lowCate.preSumCount}}次，占比：{{(100 * scope.row.lowCate.preSumCount/rs.klineCount).toFixed(2)}}%`;
+                          </el-alert>
+                        </template>
+                      </template>
+                    </el-table-column>
+
+                    <el-table-column label="收盘">
+                      <template slot-scope="scope">
+                        <el-tag>数量：{{scope.row.closeCate.klines.length}}</el-tag>
+                        <template v-if="scope.row.closeCate.klines.length">
+                          <el-tag>比例：{{(100 * scope.row.closeCate.klines.length/rs.klineCount).toFixed(2)}}%</el-tag>
+                          <el-tag>平均幅度：{{(scope.row.closeCate.meanValue * 100).toFixed(2)}}%</el-tag>
+                          <el-alert>
+                            短上影：{{scope.row.closeCate.shortHigh}}，短下影：{{scope.row.closeCate.shortLow}}，涨：{{scope.row.closeCate.upCount}}({{(scope.row.closeCate.upCount * 100 / scope.row.closeCate.klines.length).toFixed(2)}}%)，跌：{{scope.row.closeCate.downCount}}
+                          </el-alert>
+                          <el-alert v-if="scope.row.closeCate.preSumCount">
+                            <b>低于{{scope.row.closeCate.rightName}}</b>：{{scope.row.closeCate.preSumCount}}次，占比：{{(100 * scope.row.closeCate.preSumCount/rs.klineCount).toFixed(2)}}%`;
+                          </el-alert>
+                        </template>
+                      </template>
+                    </el-table-column>
+                  </el-table>
               </template>
               <h3 v-else>暂无结果</h3>
           </el-tab-pane>
@@ -107,6 +159,7 @@ export default {
         subAnalyze: [],
         selecttedCate: null,
         subCateParam: null,
+        rsTable: [],
       }
     },
     watch: {
@@ -333,6 +386,7 @@ export default {
           });
           this.chartData = [highData, lowData, closeData];
           this.drawChart();
+          this.putToTable();
         },
         findSutableCate(percent, categories) {
           const cate = categories.find(cate => {
@@ -347,6 +401,7 @@ export default {
           const seryNames =['高点分布', '低点分布', '收盘分布'];
           const self = this;
           const lasteKline = _.last(self.$root.wholeKlineData.klines);
+          const cates = this.getCategories();
           this.$refs.chart.ins.setOption({
             tooltip: {
               show: true,
@@ -386,7 +441,7 @@ export default {
             },
             xAxis: {
               type: 'category',
-              data: this.getCategories().map(c => c.categoryName),
+              data: cates.map((c, idx) => (idx === cates.length - 1 || idx === 0) ? c.categoryName : c.leftName ),
               splitLine: {
                 show: true,
               },
@@ -417,6 +472,20 @@ export default {
               }
             }),
           })
+        },
+
+        putToTable() {
+          const cates = this.getCategories();
+          this.chartData[0].forEach((cate, idx) => {
+            cates[idx].highCate = cate;
+          })
+          this.chartData[1].forEach((cate, idx) => {
+            cates[idx].lowCate = cate;
+          })
+          this.chartData[2].forEach((cate, idx) => {
+            cates[idx].closeCate = cate;
+          })
+          this.rsTable = cates;
         }
     }
 }
