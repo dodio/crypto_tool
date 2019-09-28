@@ -1,6 +1,6 @@
 <template>
   <div class="kline">
-    <el-tabs v-model="activeName">
+    <el-tabs v-model="activeName" :before-leave="beforeTabChange">
       <el-tab-pane label="输入k线数据" name="input">
           <el-form>
               <el-form-item label="选择币种">
@@ -32,6 +32,9 @@
       </el-tab-pane>
       <el-tab-pane label="分析结果" name="result">
         <KlineDataAnalyzer v-if="parsedKlineData" :title="rsTitle" :klineData="parsedKlineData"/>
+      </el-tab-pane>
+      
+      <el-tab-pane label="开新窗" name="new">
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -76,10 +79,19 @@ export default {
       rsTitle: ''
     };
   },
+  watch: {
+    
+  },
   methods: {
     openApi () {
       const url = `https://api.hbdm.com/market/history/kline?symbol=${[this.selectedSymbol, this.selectedContract].join('_')}&period=${this.peroid}&size=${this.size}`;
       window.open(url);
+    },
+    beforeTabChange(val, prev) {
+      if(val === 'new') {
+        window.open(location.href);
+        return false;
+      }
     },
     getKlineData () {
       if (!this.klineData) {
