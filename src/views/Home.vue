@@ -47,7 +47,7 @@ export default {
   components: {
     KlineDataAnalyzer
   },
-  data() {
+  data () {
     return {
       activeName: 'input',
       klineData: '',
@@ -59,29 +59,29 @@ export default {
       contractType: [
         {
           type: 'CW',
-          name: '当周',
+          name: '当周'
         },
         {
           type: 'NW',
-          name: '次周',
+          name: '次周'
         },
         {
           type: 'CQ',
-          name: '当季',
+          name: '当季'
         }
       ],
       peroids: '1min,5min,15min,30min,60min,4hour,1day,1mon'.split(','),
       parsedKlineData: null,
       rsTitle: ''
-    }
+    };
   },
   methods: {
-    openApi() {
+    openApi () {
       const url = `https://api.hbdm.com/market/history/kline?symbol=${[this.selectedSymbol, this.selectedContract].join('_')}&period=${this.peroid}&size=${this.size}`;
       window.open(url);
     },
-    getKlineData() {
-      if(!this.klineData) {
+    getKlineData () {
+      if (!this.klineData) {
         this.$message({
           message: '没有填写k线数据',
           type: 'error'
@@ -94,7 +94,7 @@ export default {
         const inputData = JSON.parse(this.klineData);
         klineData.dataInfo = inputData.ch || '未识别数据周期信息';
         klines = inputData.data || inputData || [];
-      } catch(err) {
+      } catch (err) {
         return this.$message(err.message);
       }
 
@@ -103,19 +103,22 @@ export default {
         k.highIncrease = (k.high - k.open) / k.open; // 最高增幅
         k.lowDescrease = (k.low - k.open) / k.open; // 最低增幅
         k.closePercent = (k.close - k.open) / k.open;
-        k.datetime = moment(k.id * 1e3).format('YYYY-MM-DD HH:mm');
+        const day = moment(k.id * 1e3);
+        k.datetime = day.format('YYYY-MM-DD HH:mm');
+        k.HHMM = day.format('HH:mm');
+        k.WeekDay = '周' + day.day();
+        console.log(k.WeekDay);
       });
 
       klineData.klines = klines;
       return klineData;
     },
-    analysis() {
+    analysis () {
       const parsedKlineData = this.getKlineData();
       this.parsedKlineData = this.$root.wholeKlineData = parsedKlineData;
       this.activeName = 'result';
       this.rsTitle = parsedKlineData.dataInfo + '整体分析';
     }
   }
-}
+};
 </script>
-
