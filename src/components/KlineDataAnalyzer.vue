@@ -109,6 +109,13 @@
                   <PieChart @item-click="setSubAnalyzerByPie" title="周内日分布比例" :dataObj="pieWeekData"/>
                 </div>
               </el-col>
+              
+              <el-col :span="24">
+                <div style="width:100%;height: 300px;" v-if="pieIntervalData">
+                  <PieChart title="本区间各k险间隔分布比例" :dataObj="pieIntervalData"/>
+                </div>
+              </el-col>
+              
             </el-row>
           </el-tab-pane>
       </el-tabs>
@@ -180,6 +187,7 @@ export default {
       rsTable: [],
       pieHourData: null,
       pieWeekData: null,
+      pieIntervalData: null
     };
   },
   watch: {
@@ -398,19 +406,33 @@ export default {
         }
       });
 
+
+
       highData.forEach(cate => {
         cate.values = cate.klines.map(k => k.highIncrease);
         cate.meanValue = _.mean(cate.values);
+
+        cate.intervals = this.getIntervals(cate.klines);
+        cate.meanInterval = _.mean(cate.intervals);
+
         this.countKlineInfo(cate.klines, cate);
       });
       lowData.forEach(cate => {
         cate.values = cate.klines.map(k => k.lowDescrease);
         cate.meanValue = _.mean(cate.values);
+
+        cate.intervals = this.getIntervals(cate.klines);
+        cate.meanInterval = _.mean(cate.intervals);
+
         this.countKlineInfo(cate.klines, cate);
       });
       closeData.forEach(cate => {
         cate.values = cate.klines.map(k => k.closePercent);
         cate.meanValue = _.mean(cate.values);
+
+        cate.intervals = this.getIntervals(cate.klines);
+        cate.meanInterval = _.mean(cate.intervals);
+
         this.countKlineInfo(cate.klines, cate);
       });
 
@@ -433,11 +455,29 @@ export default {
         const pred = arr[idx - 1];
         d.preSumCount = idx > 0 ? pred.preSumCount + d.klines.length : d.klines.length;
       });
+      
+      const intervals = this.getIntervals(klines);
+      const intervalCountMap = _.mapKeys(_.groupBy(intervals), (value, key) => `间隔${key}k(${(100 * value.length / intervals.length).toFixed(2)}%)`);
+
       this.chartData = [highData, lowData, closeData];
       this.pieHourData = klineHourMap;
       this.pieWeekData = weekDayMap;
+      this.pieIntervalData = intervalCountMap;
       this.drawChart();
       this.putToTable();
+    },
+
+    getIntervals(klines) {
+      const klineTimeInterval = this.$root.klineTimeInterval;
+      if(klines.length < 2) {
+        return [];
+      }
+      const intervals = [];
+      for(let i = 1; i < klines.length; i++) {
+        const intervalTime = klines[i].id - klines[i-1].id;
+        intervals.push( (intervalTime - klineTimeInterval) / klineTimeInterval);
+      }
+      return intervals;
     },
     findSutableCate (percent, categories) {
       const cate = categories.find(cate => {
@@ -466,13 +506,19 @@ export default {
                 `;
             if (data.preSumCount) {
               toolTip += `<br/>
-                  <b>${p.seriesIndex === 0 ? `高于${data.leftName}` : `低于${data.rightName}`}</b>：${data.preSumCount}次，整体占比：${(100 * data.preSumCount / self.rs.klineCount).toFixed(2)}%，柱后比：${(100 * p.data / data.preSumCount).toFixed(2)}%`;
+                <b>${p.seriesIndex === 0 ? `高于${data.leftName}` : `低于${data.rightName}`}</b>：${data.preSumCount}次，整体占比：${(100 * data.preSumCount / self.rs.klineCount).toFixed(2)}%，柱后比：${(100 * p.data / data.preSumCount).toFixed(2)}%`;
             }
             toolTip += `<br/>
                 <br/>
                 <b>该范围平均幅度：${(data.meanValue * 100).toFixed(2)}%</b>
                 <br/>
                 <b>最新k线该位置建议开仓价格</b>：${(lasteKline.open * (1 + data.meanValue)).toFixed(2)}
+                
+                ${data.intervals.length && `
+                <br/>
+                <b>平均间隔</b>：${data.meanInterval.toFixed(1)}k线
+                <br/>
+                `}
                 `;
             return toolTip;
           }

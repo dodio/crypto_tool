@@ -128,6 +128,7 @@ export default {
     analysis () {
       const parsedKlineData = this.getKlineData();
       this.parsedKlineData = this.$root.wholeKlineData = parsedKlineData;
+      this.$root.klineTimeInterval = parsedKlineData.klines[1].id - parsedKlineData.klines[0].id;
       this.activeName = 'result';
       this.rsTitle = parsedKlineData.dataInfo + '整体分析';
     }
