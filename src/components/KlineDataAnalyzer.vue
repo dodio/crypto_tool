@@ -81,7 +81,7 @@
           <el-tab-pane label="振幅分布图" name="second">
               <el-form :inline="true">
                 <el-form-item label="最大波幅">
-                  <el-input-number v-model="maxPercent" @change="analysis" :step="0.01" :min="0.05" :max="1"></el-input-number>
+                  <el-input-number v-model="maxPercent" @change="analysis" :step="0.01" :min="0.01" :max="1"></el-input-number>
                 </el-form-item>
                 <el-form-item label="分隔区间">
                   <el-input-number v-model="splitter" @change="analysis" :step="0.001" :min="0.001" :max="0.2"></el-input-number>
@@ -466,7 +466,7 @@ export default {
                 `;
             if (data.preSumCount) {
               toolTip += `<br/>
-                  <b>${p.seriesIndex === 0 ? `高于${data.leftName}` : `低于${data.rightName}`}</b>：${data.preSumCount}次，占比：${(100 * data.preSumCount / self.rs.klineCount).toFixed(2)}%`;
+                  <b>${p.seriesIndex === 0 ? `高于${data.leftName}` : `低于${data.rightName}`}</b>：${data.preSumCount}次，整体占比：${(100 * data.preSumCount / self.rs.klineCount).toFixed(2)}%，柱后比：${(100 * p.data / data.preSumCount).toFixed(2)}%`;
             }
             toolTip += `<br/>
                 <br/>
