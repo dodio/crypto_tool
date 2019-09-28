@@ -6,7 +6,7 @@ import echarts from 'echarts';
 export default {
   mounted () {
     this.ins = echarts.init(this.$refs.container);
-    this.ins.on(this.$emit.bind(this));
+    this.ins.on('click', this.$emit.bind(this, 'click'));
   },
   beforeDestroy () {
     this.ins.dispose();

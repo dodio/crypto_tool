@@ -42,6 +42,7 @@
 import moment from 'moment';
 import _ from 'lodash';
 import KlineDataAnalyzer from '../components/KlineDataAnalyzer';
+const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 export default {
   components: {
@@ -105,9 +106,8 @@ export default {
         k.closePercent = (k.close - k.open) / k.open;
         const day = moment(k.id * 1e3);
         k.datetime = day.format('YYYY-MM-DD HH:mm');
-        k.HHMM = day.format('HH:mm');
-        k.WeekDay = '周' + day.day();
-        console.log(k.WeekDay);
+        k.HH = day.format('HH') + '点';
+        k.WeekDay = '周' + WEEKDAYS[day.weekday()];
       });
 
       klineData.klines = klines;
