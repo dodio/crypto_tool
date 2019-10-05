@@ -129,11 +129,19 @@
       <el-dialog v-if="selecttedCate" :visible="true" title="设置细分分析参数">
         <h3>当前选择区间：{{selecttedCate.sery.seriesName}}:{{selecttedCate.categoryName}}</h3>
         <el-form>
+          <el-form-item label="区间选择">
+            <el-select
+              v-model="subCateParam.zone">
+              <el-option value="self">{{selecttedCate.categoryName}}</el-option>
+              <el-option value="withBefore">小于{{selecttedCate.rightName}}</el-option>
+              <el-option value="withAfter">大于{{selecttedCate.leftName}}</el-option>
+            </el-select>
+          </el-form-item>
           <el-form-item>
             <el-switch
               v-model="subCateParam.present"
-              active-text="分析本区间k线"
-              inactive-text="分析本区间后续k线">
+              active-text="分析被选择区间的k线"
+              inactive-text="分析被选择区间后续k线">
             </el-switch>
           </el-form-item>
           <el-form-item v-if="!subCateParam.present">
@@ -213,7 +221,8 @@ export default {
         present: false,
         single: true,
         after: true,
-        n: 1
+        n: 1,
+        zone: 'self'
       };
     });
   },
@@ -241,7 +250,7 @@ export default {
     setSubAnalyzer () {
       const cate = this.selecttedCate;
       const sery = cate.sery;
-      const { present, single, n, after } = this.subCateParam;
+      const { present, single, n, after, zone } = this.subCateParam;
       const tabId = String(Math.random());
       const subAnalyzeData = {
         tabId,
@@ -251,22 +260,39 @@ export default {
       };
       const wholeKlines = this.$root.wholeKlineData.klines;
       const directionText = after ? '后' : '前';
+      let selectedKlines;
+      let titleCate;
+
+      if(zone === 'self') {
+        selectedKlines = cate.klines;
+        titleCate = cate.categoryName;
+      } else if( zone === 'withBefore') {
+        const seryData = this.chartData[sery.seriesIndex];
+        const cateIndex = seryData.findIndex(d => d === cate);
+        selectedKlines = Array.prototype.concat.apply([], seryData.slice(0, cateIndex + 1).map(d => d.klines));
+        titleCate = `低于${cate.rightName}`;
+      } else {
+        const seryData = this.chartData[sery.seriesIndex];
+        const cateIndex = seryData.findIndex(d => d === cate);
+        selectedKlines = Array.prototype.concat.apply([], seryData.slice(cateIndex, seryData.length).map(d => d.klines));
+        titleCate = `高于${cate.leftName}`;
+      }
 
       if (present) {
-        subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + '精细分析';
-        subAnalyzeData.klineData.klines = cate.klines;
+        subAnalyzeData.rsTitle = sery.seriesName + titleCate + '精细分析';
+        subAnalyzeData.klineData.klines = selectedKlines;
       } else if (single) {
-        subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `${directionText}第${n}k线分析`;
-        subAnalyzeData.klineData.klines = cate.klines.map(k => {
+        subAnalyzeData.rsTitle = sery.seriesName + titleCate + `${directionText}第${n}k线分析`;
+        subAnalyzeData.klineData.klines = selectedKlines.map(k => {
           return wholeKlines[k.index + (after ? n : -n)];
         }).filter(k => !!k);
       } else {
-        subAnalyzeData.rsTitle = sery.seriesName + cate.categoryName + `连续${directionText}${n}k线分析`;
+        subAnalyzeData.rsTitle = sery.seriesName + titleCate + `连续${directionText}${n}k线分析`;
         // all 1 - n klines
         const allKlines = Array.prototype.concat.apply([],
           Array.from({ length: n }).map((v, idx) => {
             const n = idx + 1;
-            return cate.klines.map(k => {
+            return selectedKlines.map(k => {
               return wholeKlines[k.index + (after ? n : -n)];
             }).filter(k => !!k);
           })
@@ -274,7 +300,7 @@ export default {
         console.log('后nk线', allKlines);
         subAnalyzeData.klineData.klines = _.sortedUniqBy(allKlines, 'id');
       }
-      console.log('数量', cate.klines.length, subAnalyzeData.klineData.klines.length);
+      console.log('数量', selectedKlines.length, subAnalyzeData.klineData.klines.length);
 
       this.subAnalyze.push(subAnalyzeData);
       this.subCateParam = null;
