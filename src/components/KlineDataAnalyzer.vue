@@ -170,6 +170,7 @@
 import Echart from './Echart';
 import PieChart from './PieChart';
 import _ from 'lodash';
+import moment from 'moment';
 
 export default {
   name: 'KlineDataAnalyzer',
@@ -534,18 +535,29 @@ export default {
               toolTip += `<br/>
                 <b>${p.seriesIndex === 0 ? `高于${data.leftName}` : `低于${data.rightName}`}</b>：${data.preSumCount}次，整体占比：${(100 * data.preSumCount / self.rs.klineCount).toFixed(2)}%，柱后比：${(100 * p.data / data.preSumCount).toFixed(2)}%`;
             }
+            const cateLastKline = data.klines[data.klines.length-1];
+            const klineTimeInterval = self.$root.klineTimeInterval;
             toolTip += `<br/>
                 <br/>
                 <b>该范围平均幅度：${(data.meanValue * 100).toFixed(2)}%</b>
                 <br/>
                 <b>最新k线该位置建议开仓价格</b>：${(lasteKline.open * (1 + data.meanValue)).toFixed(2)}
-                
+                <br/>
+                最后发生时间：<b>${cateLastKline.datetime}</b>，价格：${[cateLastKline.high, cateLastKline.low, cateLastKline.close][p.seriesIndex]}
                 ${data.intervals.length && `
                 <br/>
                 <b>平均间隔</b>：${data.meanInterval.toFixed(1)}k线
                 <br/>
+                <font color="LawnGreen">相对安全时间：${getMeanIntervalTime(0.25)}</font><br/>
+                <font color="yellow">预警时间：${getMeanIntervalTime(0.5)}</font><br/>
+                <font color="orange">危险时间：${getMeanIntervalTime(0.75)}</font><br/>
+                <font color="LightCoral">按平均间隔时间在：${getMeanIntervalTime()}</font>
+                <br/>
                 `}
                 `;
+              function getMeanIntervalTime(pos  = 1) {
+                return moment(Math.round(cateLastKline.id + pos * data.meanInterval * klineTimeInterval) * 1e3).format('YYYY-MM-DD HH:mm:ss')
+              } 
             return toolTip;
           }
         },
