@@ -57,7 +57,7 @@ export default {
       klineData: '',
       selectedSymbol: 'BTC',
       selectedContract: 'CQ',
-      size: 100,
+      size: 2000,
       peroid: '1day',
       symbols: 'BTC,ETH,EOS,LTC,BSV,BCH,XRP,TRX'.split(','),
       contractType: [
@@ -126,6 +126,14 @@ export default {
       return klineData;
     },
     analysis () {
+      if(this.parsedKlineData) {
+        this.parsedKlineData = null;
+        // empty charts
+        setTimeout(() => {
+          this.analysis();
+        }, 1e3);
+        return;
+      }
       const parsedKlineData = this.getKlineData();
       this.parsedKlineData = this.$root.wholeKlineData = parsedKlineData;
       this.$root.klineTimeInterval = parsedKlineData.klines[1].id - parsedKlineData.klines[0].id;

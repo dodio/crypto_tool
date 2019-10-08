@@ -2,7 +2,18 @@
     <div class="result">
       <h2 style="text-align:center;">{{title}}</h2>
       <el-divider/>
-      <el-tabs v-model="activeName">
+      <el-form :inline="true" size="mini">
+        <el-form-item label="最大波幅">
+          <el-input-number v-model="maxPercent" @change="analysis" :step="0.01" :min="0.01" :max="1"></el-input-number>
+        </el-form-item>
+        <el-form-item label="分隔区间">
+          <el-input-number v-model="splitter" @change="analysis" :step="0.001" :min="0.001" :max="0.2"></el-input-number>
+        </el-form-item>
+        <el-form-item label="短影线百分比定义">
+          <el-input-number v-model="shortPercent" @change="analysis" :step="0.001" :min="0.001" :max="0.1"></el-input-number>
+        </el-form-item>
+      </el-form>
+      <el-tabs v-model="activeName" type="border-card">
           <el-tab-pane label="统计信息" name="first">
               <template v-if="rs">
                   <h4>数据信息</h4>
@@ -28,50 +39,17 @@
                     <el-table-column prop="categoryName" label="幅度"></el-table-column>
                     <el-table-column label="最大涨幅">
                       <template slot-scope="scope">
-                        <el-tag>数量：{{scope.row.highCate.klines.length}}</el-tag>
-                        <template v-if="scope.row.highCate.klines.length">
-                            <el-tag>比例：{{(100 * scope.row.highCate.klines.length/rs.klineCount).toFixed(2)}}%</el-tag>
-                            <el-tag>平均幅度：{{(scope.row.highCate.meanValue * 100).toFixed(2)}}%</el-tag>
-                            <el-alert>
-                              短上影：{{scope.row.highCate.shortHigh}}，短下影：{{scope.row.highCate.shortLow}}，涨：{{scope.row.highCate.upCount}}({{(scope.row.highCate.upCount * 100 / scope.row.highCate.klines.length).toFixed(2)}}%)，跌：{{scope.row.highCate.downCount}}
-                            </el-alert>
-                            <el-alert v-if="scope.row.highCate.preSumCount">
-                              <b>高于{{scope.row.highCate.leftName}}</b>：{{scope.row.highCate.preSumCount}}次，占比：{{(100 * scope.row.highCate.preSumCount/rs.klineCount).toFixed(2)}}%`;
-                            </el-alert>
-                        </template>
+                        <div :v-html="`<div>${getCateDescription(0, scope.$index)}</div>`"></div>
                       </template>
                     </el-table-column>
-
                     <el-table-column label="最大跌幅">
                       <template slot-scope="scope">
-                        <el-tag>数量：{{scope.row.lowCate.klines.length}}</el-tag>
-                        <template v-if="scope.row.lowCate.klines.length">
-                          <el-tag>比例：{{(100 * scope.row.lowCate.klines.length/rs.klineCount).toFixed(2)}}%</el-tag>
-                          <el-tag>平均幅度：{{(scope.row.lowCate.meanValue * 100).toFixed(2)}}%</el-tag>
-                          <el-alert>
-                            短上影：{{scope.row.lowCate.shortHigh}}，短下影：{{scope.row.lowCate.shortLow}}，涨：{{scope.row.lowCate.upCount}}({{(scope.row.lowCate.upCount * 100 / scope.row.lowCate.klines.length).toFixed(2)}}%)，跌：{{scope.row.lowCate.downCount}}
-                          </el-alert>
-
-                          <el-alert v-if="scope.row.lowCate.preSumCount">
-                            <b>低于{{scope.row.lowCate.rightName}}</b>：{{scope.row.lowCate.preSumCount}}次，占比：{{(100 * scope.row.lowCate.preSumCount/rs.klineCount).toFixed(2)}}%`;
-                          </el-alert>
-                        </template>
+                        <div :v-html="`<div>${getCateDescription(1, scope.$index)}</div>`"></div>
                       </template>
                     </el-table-column>
-
                     <el-table-column label="收盘">
                       <template slot-scope="scope">
-                        <el-tag>数量：{{scope.row.closeCate.klines.length}}</el-tag>
-                        <template v-if="scope.row.closeCate.klines.length">
-                          <el-tag>比例：{{(100 * scope.row.closeCate.klines.length/rs.klineCount).toFixed(2)}}%</el-tag>
-                          <el-tag>平均幅度：{{(scope.row.closeCate.meanValue * 100).toFixed(2)}}%</el-tag>
-                          <el-alert>
-                            短上影：{{scope.row.closeCate.shortHigh}}，短下影：{{scope.row.closeCate.shortLow}}，涨：{{scope.row.closeCate.upCount}}({{(scope.row.closeCate.upCount * 100 / scope.row.closeCate.klines.length).toFixed(2)}}%)，跌：{{scope.row.closeCate.downCount}}
-                          </el-alert>
-                          <el-alert v-if="scope.row.closeCate.preSumCount">
-                            <b>低于{{scope.row.closeCate.rightName}}</b>：{{scope.row.closeCate.preSumCount}}次，占比：{{(100 * scope.row.closeCate.preSumCount/rs.klineCount).toFixed(2)}}%`;
-                          </el-alert>
-                        </template>
+                        <div :v-html="`<div>${getCateDescription(2, scope.$index)}</div>`"></div>
                       </template>
                     </el-table-column>
                   </el-table>
@@ -79,20 +57,8 @@
               <h3 v-else>暂无结果</h3>
           </el-tab-pane>
           <el-tab-pane label="振幅分布图" name="second">
-              <el-form :inline="true">
-                <el-form-item label="最大波幅">
-                  <el-input-number v-model="maxPercent" @change="analysis" :step="0.01" :min="0.01" :max="1"></el-input-number>
-                </el-form-item>
-                <el-form-item label="分隔区间">
-                  <el-input-number v-model="splitter" @change="analysis" :step="0.001" :min="0.001" :max="0.2"></el-input-number>
-                </el-form-item>
-                <el-form-item label="短影线百分比定义">
-                  <el-input-number v-model="shortPercent" @change="analysis" :step="0.001" :min="0.001" :max="0.1"></el-input-number>
-                </el-form-item>
-              </el-form>
-              <el-divider/>
               <div class="echartContainer">
-                  <div style="width: 100%;height: 500px;">
+                  <div style="width: 100%;height: 600px;">
                       <Echart ref="chart" />
                   </div>
               </div>
@@ -120,7 +86,7 @@
           </el-tab-pane>
       </el-tabs>
       
-      <el-tabs v-model="subActiveName" v-if="subAnalyze.length"  @edit="tabRemove" style="margin-top: 20px;">
+      <el-tabs type="border-card" v-model="subActiveName" v-if="subAnalyze.length"  @edit="tabRemove">
         <el-tab-pane v-for="sub in subAnalyze" :key="sub.tabId" :label="sub.rsTitle" :closable="true" :name="sub.tabId">
           <KlineDataAnalyzer :title="sub.rsTitle" :klineData="sub.klineData"/>
         </el-tab-pane>
@@ -171,6 +137,7 @@ import Echart from './Echart';
 import PieChart from './PieChart';
 import _ from 'lodash';
 import moment from 'moment';
+const seryNames = ['高点分布', '低点分布', '收盘分布'];
 
 export default {
   name: 'KlineDataAnalyzer',
@@ -215,6 +182,9 @@ export default {
   mounted () {
     this.analysis();
     this.$refs.chart.ins.on('click', (sery) => {
+      if(!sery.value) {
+        return;
+      }
       const cate = this.chartData[sery.seriesIndex][sery.dataIndex];
       cate.sery = sery;
       this.selecttedCate = cate;
@@ -463,26 +433,6 @@ export default {
         this.countKlineInfo(cate.klines, cate);
       });
 
-      [...highData].reverse().forEach((d, idx, arr) => {
-        if (d.cateValue < 0) {
-          return;
-        }
-        const pred = arr[idx - 1];
-        d.preSumCount = idx > 0 ? pred.preSumCount + d.klines.length : d.klines.length;
-      });
-      lowData.forEach((d, idx, arr) => {
-        if (d.cateValue > 0) {
-          return;
-        }
-        const pred = arr[idx - 1];
-        d.preSumCount = idx > 0 ? pred.preSumCount + d.klines.length : d.klines.length;
-      });
-
-      closeData.forEach((d, idx, arr) => {
-        const pred = arr[idx - 1];
-        d.preSumCount = idx > 0 ? pred.preSumCount + d.klines.length : d.klines.length;
-      });
-      
       const intervals = this.getIntervals(klines);
       const intervalCountMap = _.mapKeys(_.groupBy(intervals), (value, key) => `间隔${key}k(${(100 * value.length / intervals.length).toFixed(2)}%)`);
 
@@ -516,50 +466,17 @@ export default {
       return cate;
     },
     drawChart () {
-      const seryNames = ['高点分布', '低点分布', '收盘分布'];
       const self = this;
-      const lasteKline = _.last(self.$root.wholeKlineData.klines);
       const cates = this.getCategories();
       this.$refs.chart.ins.setOption({
         tooltip: {
           show: true,
           formatter (p) {
-            const data = self.chartData[p.seriesIndex][p.dataIndex];
-            let toolTip = `${p.seriesName}<br/>
-                ${data.categoryName}：${p.data}次，占比：${(100 * p.data / self.rs.klineCount).toFixed(2)}%
-                <br/>
-                短上影：${data.shortHigh}，短下影：${data.shortLow}，涨：${data.upCount}(${(data.upCount * 100 / p.data).toFixed(2)}%)，跌：${data.downCount}
-                <br/>
-                `;
-            if (data.preSumCount) {
-              toolTip += `<br/>
-                <b>${p.seriesIndex === 0 ? `高于${data.leftName}` : `低于${data.rightName}`}</b>：${data.preSumCount}次，整体占比：${(100 * data.preSumCount / self.rs.klineCount).toFixed(2)}%，柱后比：${(100 * p.data / data.preSumCount).toFixed(2)}%`;
+            if(!p.value) {
+              return '';
             }
-            const cateLastKline = data.klines[data.klines.length-1];
-            const klineTimeInterval = self.$root.klineTimeInterval;
-            toolTip += `<br/>
-                <br/>
-                <b>该范围平均幅度：${(data.meanValue * 100).toFixed(2)}%</b>
-                <br/>
-                <b>最新k线该位置建议开仓价格</b>：${(lasteKline.open * (1 + data.meanValue)).toFixed(2)}
-                <br/>
-                最后发生时间：<b>${cateLastKline.datetime}</b>，价格：${[cateLastKline.high, cateLastKline.low, cateLastKline.close][p.seriesIndex]}
-                ${data.intervals.length && `
-                <br/>
-                <b>平均间隔</b>：${data.meanInterval.toFixed(1)}k线
-                <br/>
-                <font color="LawnGreen">相对安全时间：${getMeanIntervalTime(0.25)}</font><br/>
-                <font color="yellow">预警时间：${getMeanIntervalTime(0.5)}</font><br/>
-                <font color="orange">危险时间：${getMeanIntervalTime(0.75)}</font><br/>
-                <font color="LightCoral">按平均间隔时间在：${getMeanIntervalTime()}</font>
-                <br/>
-                `}
-                `;
-              function getMeanIntervalTime(pos  = 1) {
-                return moment(Math.round(cateLastKline.id + pos * data.meanInterval * klineTimeInterval) * 1e3).format('YYYY-MM-DD HH:mm:ss')
-              } 
-            return toolTip;
-          }
+            return `${p.seriesName}<br/>${self.getCateDescription(p.seriesIndex, p.dataIndex)}`;
+          },
         },
         legend: {
           show: true
@@ -596,6 +513,9 @@ export default {
                 value: count,
                 label: {
                   show: false
+                },
+                itemStyle: {
+                  opacity: 0
                 }
               };
             }),
@@ -603,7 +523,8 @@ export default {
             label: {
               show: true,
               position: 'top'
-            }
+            },
+            barMinHeight: 20
           };
         })
       });
@@ -621,6 +542,112 @@ export default {
         cates[idx].closeCate = cate;
       });
       this.rsTable = cates;
+    },
+
+    countPercent(mono, deno, precision = 2) {
+      return (100 * mono / deno ).toFixed(precision)
+    },
+
+    getCateDescription(seriesIndex, dataIndex) {
+      const seryData = this.chartData[seriesIndex];
+      const cateData = seryData[dataIndex];
+      if(!cateData.klines.length) {
+        return '';
+      }
+      const leftCateDatas = seryData.slice(0, dataIndex + 1);
+      const rightCateDatas = seryData.slice(dataIndex, seryData.length);
+      const lasteKline = _.last(this.$root.wholeKlineData.klines);
+
+      const cateTotalCount = cateData.klines.length;
+      const totalKlineAmount = this.rs.klineCount;
+      const countPercent = this.countPercent;
+
+      let toolTip = `
+          ${cateData.categoryName}：${cateTotalCount}次，占比：${countPercent(cateTotalCount, totalKlineAmount)}%
+          <br/>
+          短上影线：${cateData.shortHigh}次（${countPercent(cateData.shortHigh, cateTotalCount)}%），
+          短下影线：${cateData.shortLow}次（${countPercent(cateData.shortLow, cateTotalCount)}%）
+          <br/>
+          涨：${cateData.upCount}次（${countPercent(cateData.upCount, cateTotalCount)}%），
+          跌：${cateData.downCount}次（${countPercent(cateData.downCount, cateTotalCount)}%）
+          <br/>
+          `;
+
+      const percentKey = ['highIncrease', 'lowDescrease', 'closePercent'][seriesIndex];
+
+      if (seriesIndex !== 0) {
+        // 本cate不是高点分类数据，展示低于本cate的一些数据;
+        const klineCount = _.sumBy(leftCateDatas, 'klines.length');
+        const shortHigh = _.sumBy(leftCateDatas, 'shortHigh');
+        const shortLow = _.sumBy(leftCateDatas, 'shortLow');
+        const upCount = _.sumBy(leftCateDatas, 'upCount');
+        const downCount = _.sumBy(leftCateDatas, 'downCount');
+        const averagePercent = _.sum(leftCateDatas.map(c => _.sumBy(c.klines, percentKey))) / klineCount;
+
+        toolTip += `
+        <br/>
+        低于${cateData.rightName}：${klineCount}次，占整体数据：${countPercent(klineCount, totalKlineAmount)}%
+        <br/>
+        本区间占其中：${countPercent(cateTotalCount, klineCount)}%，
+        平均${averagePercent > 0 ? '涨' : '跌'}幅：${countPercent(averagePercent, 1)}%
+        <br/>
+        短上影线：${shortHigh}次（${countPercent(shortHigh, klineCount)}%），
+        短下影线：${shortLow}次（${countPercent(shortLow, klineCount)}%）
+        <br/>
+        涨：${upCount}次（${countPercent(upCount, klineCount)}%），
+        跌：${downCount}次（${countPercent(downCount, klineCount)}%）
+        <br/>
+        `;
+      }
+
+      if (seriesIndex !== 1) {
+        // 本cate不是低点分类数据，展示高于本cate的一些数据;
+        const klineCount = _.sumBy(rightCateDatas, 'klines.length');
+        const shortHigh = _.sumBy(rightCateDatas, 'shortHigh');
+        const shortLow = _.sumBy(rightCateDatas, 'shortLow');
+        const upCount = _.sumBy(rightCateDatas, 'upCount');
+        const downCount = _.sumBy(rightCateDatas, 'downCount');
+        const averagePercent = _.sum(leftCateDatas.map(c => _.sumBy(c.klines, percentKey))) / klineCount;
+
+        toolTip += `
+        <br/>
+        高于${cateData.leftName}：${klineCount}次，占整体数据：${countPercent(klineCount, totalKlineAmount)}%
+        <br/>
+        本区间占其中：${countPercent(cateTotalCount, klineCount)}%，平均${averagePercent > 0 ? '涨' : '跌'}幅：${countPercent(averagePercent, 1)}%
+        <br/>
+        短上影线：${shortHigh}次（${countPercent(shortHigh, klineCount)}%），
+        短下影线：${shortLow}次（${countPercent(shortLow, klineCount)}%）
+        <br/>
+        涨：${upCount}次（${countPercent(upCount, klineCount)}%），
+        跌：${downCount}次（${countPercent(downCount, klineCount)}%）
+        <br/>
+        `;
+      }
+      const cateLastKline = _.last(cateData.klines);
+      const klineTimeInterval = this.$root.klineTimeInterval;
+
+      toolTip += `<br/>
+          <br/>
+          <b>该范围平均幅度：${(cateData.meanValue * 100).toFixed(2)}%</b>
+          <br/>
+          <b>最新k线该位置建议开仓价格</b>：${(lasteKline.open * (1 + cateData.meanValue)).toFixed(2)}
+          <br/>
+          最后发生时间：<b>${cateLastKline.datetime}</b>，价格：${[cateLastKline.high, cateLastKline.low, cateLastKline.close][seriesIndex]}
+          ${cateData.intervals.length && `
+          <br/>
+          <b>平均间隔</b>：${cateData.meanInterval.toFixed(1)}k线
+          <br/>
+          <font color="LawnGreen">相对安全时间：${getMeanIntervalTime(0.25)}</font><br/>
+          <font color="yellow">预警时间：${getMeanIntervalTime(0.5)}</font><br/>
+          <font color="orange">危险时间：${getMeanIntervalTime(0.75)}</font><br/>
+          <font color="LightCoral">按平均间隔时间在：${getMeanIntervalTime()}</font>
+          <br/>
+          `}
+          `;
+        function getMeanIntervalTime(pos  = 1) {
+          return moment(Math.round(cateLastKline.id + pos * cateData.meanInterval * klineTimeInterval) * 1e3).format('YYYY-MM-DD HH:mm:ss')
+        } 
+      return toolTip;
     }
   }
 };
