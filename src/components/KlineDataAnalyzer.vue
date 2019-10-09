@@ -575,58 +575,62 @@ export default {
 
       const percentKey = ['highIncrease', 'lowDescrease', 'closePercent'][seriesIndex];
 
-      if (seriesIndex !== 0) {
+      if (seriesIndex !== 0 && leftCateDatas.length) {
         // 本cate不是高点分类数据，展示低于本cate的一些数据;
         const klineCount = _.sumBy(leftCateDatas, 'klines.length');
-        const shortHigh = _.sumBy(leftCateDatas, 'shortHigh');
-        const shortLow = _.sumBy(leftCateDatas, 'shortLow');
-        const upCount = _.sumBy(leftCateDatas, 'upCount');
-        const downCount = _.sumBy(leftCateDatas, 'downCount');
-        const averagePercent = _.sum(leftCateDatas.map(c => _.sumBy(c.klines, percentKey))) / klineCount;
+        if(klineCount > cateTotalCount) {
+          const shortHigh = _.sumBy(leftCateDatas, 'shortHigh');
+          const shortLow = _.sumBy(leftCateDatas, 'shortLow');
+          const upCount = _.sumBy(leftCateDatas, 'upCount');
+          const downCount = _.sumBy(leftCateDatas, 'downCount');
+          const averagePercent = _.sum(leftCateDatas.map(c => _.sumBy(c.klines, percentKey))) / klineCount;
 
-        toolTip += `
-        <br/>
-        低于${cateData.rightName}：${klineCount}次，占整体数据：${countPercent(klineCount, totalKlineAmount)}%
-        <br/>
-        本区间占其中：${countPercent(cateTotalCount, klineCount)}%，
-        平均${averagePercent > 0 ? '涨' : '跌'}幅：${countPercent(averagePercent, 1)}%
-        <br/>
-        短上影线：${shortHigh}次（${countPercent(shortHigh, klineCount)}%），
-        短下影线：${shortLow}次（${countPercent(shortLow, klineCount)}%）
-        <br/>
-        涨：${upCount}次（${countPercent(upCount, klineCount)}%），
-        跌：${downCount}次（${countPercent(downCount, klineCount)}%）
-        <br/>
-        `;
+          toolTip += `
+          <br/>
+          低于${cateData.rightName}：${klineCount}次，占整体数据：${countPercent(klineCount, totalKlineAmount)}%
+          <br/>
+          本区间占其中：${countPercent(cateTotalCount, klineCount)}%，
+          平均${averagePercent > 0 ? '涨' : '跌'}幅：${countPercent(averagePercent, 1)}%
+          <br/>
+          短上影线：${shortHigh}次（${countPercent(shortHigh, klineCount)}%），
+          短下影线：${shortLow}次（${countPercent(shortLow, klineCount)}%）
+          <br/>
+          涨：${upCount}次（${countPercent(upCount, klineCount)}%），
+          跌：${downCount}次（${countPercent(downCount, klineCount)}%）
+          <br/>
+          `;
+        }
       }
 
       if (seriesIndex !== 1) {
         // 本cate不是低点分类数据，展示高于本cate的一些数据;
         const klineCount = _.sumBy(rightCateDatas, 'klines.length');
-        const shortHigh = _.sumBy(rightCateDatas, 'shortHigh');
-        const shortLow = _.sumBy(rightCateDatas, 'shortLow');
-        const upCount = _.sumBy(rightCateDatas, 'upCount');
-        const downCount = _.sumBy(rightCateDatas, 'downCount');
-        const averagePercent = _.sum(leftCateDatas.map(c => _.sumBy(c.klines, percentKey))) / klineCount;
+        if(klineCount > cateTotalCount) {
+          const shortHigh = _.sumBy(rightCateDatas, 'shortHigh');
+          const shortLow = _.sumBy(rightCateDatas, 'shortLow');
+          const upCount = _.sumBy(rightCateDatas, 'upCount');
+          const downCount = _.sumBy(rightCateDatas, 'downCount');
+          const averagePercent = _.sum(rightCateDatas.map(c => _.sumBy(c.klines, percentKey))) / klineCount;
 
-        toolTip += `
-        <br/>
-        高于${cateData.leftName}：${klineCount}次，占整体数据：${countPercent(klineCount, totalKlineAmount)}%
-        <br/>
-        本区间占其中：${countPercent(cateTotalCount, klineCount)}%，平均${averagePercent > 0 ? '涨' : '跌'}幅：${countPercent(averagePercent, 1)}%
-        <br/>
-        短上影线：${shortHigh}次（${countPercent(shortHigh, klineCount)}%），
-        短下影线：${shortLow}次（${countPercent(shortLow, klineCount)}%）
-        <br/>
-        涨：${upCount}次（${countPercent(upCount, klineCount)}%），
-        跌：${downCount}次（${countPercent(downCount, klineCount)}%）
-        <br/>
-        `;
+          toolTip += `
+          <br/>
+          高于${cateData.leftName}：${klineCount}次，占整体数据：${countPercent(klineCount, totalKlineAmount)}%
+          <br/>
+          本区间占其中：${countPercent(cateTotalCount, klineCount)}%，平均${averagePercent > 0 ? '涨' : '跌'}幅：${countPercent(averagePercent, 1)}%
+          <br/>
+          短上影线：${shortHigh}次（${countPercent(shortHigh, klineCount)}%），
+          短下影线：${shortLow}次（${countPercent(shortLow, klineCount)}%）
+          <br/>
+          涨：${upCount}次（${countPercent(upCount, klineCount)}%），
+          跌：${downCount}次（${countPercent(downCount, klineCount)}%）
+          <br/>
+          `;
+        }
       }
       const cateLastKline = _.last(cateData.klines);
       const klineTimeInterval = this.$root.klineTimeInterval;
 
-      toolTip += `<br/>
+      toolTip += `
           <br/>
           <b>该范围平均幅度：${(cateData.meanValue * 100).toFixed(2)}%</b>
           <br/>
