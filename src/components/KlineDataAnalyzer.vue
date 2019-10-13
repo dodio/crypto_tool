@@ -113,15 +113,21 @@
           <el-form-item v-if="!subCateParam.present">
             <el-switch
               v-model="subCateParam.after"
-              active-text="后"
-              inactive-text="前">
+              :active-text="subCateParam.after ? '后' : ''"
+              :inactive-text="subCateParam.after ? '' : '前'">
             </el-switch>
             <el-switch
               v-model="subCateParam.single"
-              active-text="第"
-              inactive-text="连续">
+              :active-text="subCateParam.single ? '第' : ''"
+              :inactive-text="subCateParam.single ? '' : '连续'">
             </el-switch>
             <el-input-number v-model="subCateParam.n" :step="1" :min="1" :max="5"></el-input-number>
+          </el-form-item>
+          <el-form-item label="分析组合k线">
+            <el-button-group>
+              <el-button size="mini" :type="subCateParam.vk === null ? 'primary' : 'default'" @click="subCateParam.vk = null">无</el-button>
+              <el-button size="mini" v-for="vk in conbineKlines" :key="vk.label" :type="subCateParam.vk === vk ? 'primary' : 'default'" @click="subCateParam.vk = vk">{{vk.label}}</el-button>
+            </el-button-group>
           </el-form-item>
           <el-form-item>
             <el-button @click="selecttedCate=null,subCateParam=null">取消</el-button>
@@ -137,6 +143,7 @@ import Echart from './Echart';
 import PieChart from './PieChart';
 import _ from 'lodash';
 import moment from 'moment';
+import { conbineKlines } from './klineUtil';
 const seryNames = ['高点分布', '低点分布', '收盘分布'];
 
 export default {
@@ -163,7 +170,41 @@ export default {
       rsTable: [],
       pieHourData: null,
       pieWeekData: null,
-      pieIntervalData: null
+      pieIntervalData: null,
+      conbineKlines: [{
+        interval: 5 * 60,
+        label: '5min',
+      }, {
+        interval: 15 * 60,
+        label: '15min',
+      }, {
+        interval: 30 * 60,
+        label: '30min',
+      }, {
+        interval: 60 * 60,
+        label: '60min',
+      }, {
+        interval: 4 * 60 * 60,
+        label: '4hour',
+      }, {
+        interval: 6 * 60 * 60,
+        label: '6hour',
+      }, {
+        interval: 12 * 60 * 60,
+        label: '12hour',
+      }, {
+        interval: 24 * 60 * 60,
+        label: '1day',
+      }, {
+        interval: 7 * 24 * 60 * 60,
+        label: '7day',
+      }, {
+        interval: 14 * 24 * 60 * 60,
+        label: '2weeks',
+      }, {
+        interval: 30 * 24 * 60 * 60,
+        label: '1month',
+      }].filter(vk => this.$root.klineTimeInterval < vk.interval && vk.interval < this.$root.klineTimeInterval * 2000)
     };
   },
   watch: {
@@ -193,7 +234,8 @@ export default {
         single: true,
         after: true,
         n: 1,
-        zone: 'self'
+        zone: 'self',
+        vk: null
       };
     });
   },
@@ -221,7 +263,7 @@ export default {
     setSubAnalyzer () {
       const cate = this.selecttedCate;
       const sery = cate.sery;
-      const { present, single, n, after, zone } = this.subCateParam;
+      const { present, single, n, after, zone, vk } = this.subCateParam;
       const tabId = String(Math.random());
       const subAnalyzeData = {
         tabId,
@@ -272,6 +314,33 @@ export default {
         subAnalyzeData.klineData.klines = _.sortedUniqBy(allKlines, 'id');
       }
       console.log('数量', selectedKlines.length, subAnalyzeData.klineData.klines.length);
+      if(vk) {
+        subAnalyzeData.klineData.klines = subAnalyzeData.klineData.klines.map(kline => {
+          const nextK = wholeKlines[kline.index + 1];
+          const endKTime = nextK.id + vk.interval;
+          const endK = wholeKlines.findIndex(k => k.id >= endKTime);
+          // 即kline后续k线不足以组成一根完整的 组合kline，就抛弃
+          if(endK === -1 || !nextK) {
+            return null;
+          }
+          const klines = wholeKlines.slice(kline.index + 1, endK);
+          const vKline = conbineKlines(klines);
+          console.log(klines.length, vk.label);
+          return vKline;
+        }).filter(k => !!k);
+        const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+        subAnalyzeData.klineData.klines.forEach((k, idx) => {
+          k.index = idx;
+          k.highIncrease = (k.high - k.open) / k.open; // 最高增幅
+          k.lowDescrease = (k.low - k.open) / k.open; // 最低增幅
+          k.closePercent = (k.close - k.open) / k.open;
+          const day = moment(k.id * 1e3);
+          k.datetime = day.format('YYYY-MM-DD HH:mm');
+          k.HH = day.format('HH') + '点';
+          k.WeekDay = '周' + WEEKDAYS[day.weekday()];
+        })
+        subAnalyzeData.rsTitle = `(组合${vk.label})` + subAnalyzeData.rsTitle;
+      }
 
       this.subAnalyze.push(subAnalyzeData);
       this.subCateParam = null;
