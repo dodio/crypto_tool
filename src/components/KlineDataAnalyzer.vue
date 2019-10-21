@@ -75,7 +75,6 @@
                   <PieChart @item-click="setSubAnalyzerByPie" title="周内日分布比例" :dataObj="pieWeekData"/>
                 </div>
               </el-col>
-              
               <el-col :span="24">
                 <div style="width:100%;height: 300px;" v-if="pieIntervalData">
                   <PieChart title="本区间各k险间隔分布比例" :dataObj="pieIntervalData"/>

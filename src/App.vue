@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <div id="nav">
-      <el-menu mode="horizontal" style="background-color: rgb(84, 92, 100);">
-        <el-menu-item index="2">k线涨跌幅统计</el-menu-item>
-        <el-menu-item index="1">计算器</el-menu-item>
+      <el-menu mode="horizontal" :default-active="$route.path" text-color="#aaa" active-text-color="#fff" style="background-color: rgb(84, 92, 100);" router>
+        <el-menu-item index="/" >k线涨跌幅统计</el-menu-item>
+        <el-menu-item index="/difference">期货涨跌幅</el-menu-item>
       </el-menu>
     </div>
     <main>
@@ -16,6 +16,8 @@
 export default {
   data () {
     return {};
+  },
+  methods: {
   }
 };
 </script>
